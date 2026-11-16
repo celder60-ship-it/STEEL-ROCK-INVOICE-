@@ -23,3 +23,25 @@ The build downloads the reviewed invoice HTML from a fixed URL and verifies its 
 
 ## Status
 Source prepared; Android compilation and device testing pending the first GitHub Actions run.
+
+
+---
+
+## iPhone / iOS version
+
+A new offline-capable iPhone invoice app is available in the [web/](web/) folder. It uses the same Steel Rock invoice requirements: 18 rows, number 03959 onward, a 15% surcharge on the first charge, 5% PST only (no GST), one-page Letter invoice print/PDF, and an angled black pumpjack watermark.
+
+**Install without an Apple Developer account:** Under this repository's **Settings → Pages**, choose **GitHub Actions** as the publishing source. Once the *Publish Steel Rock iPhone App* workflow deploys, open the Pages URL in **Safari** on the iPhone. Choose **Share → Add to Home Screen → Open as Web App → Add**.
+
+Invoices save locally and work without a ChatGPT sign-in. Use **Print / PDF** followed by **Save to Files** to save an invoice PDF in a phone folder. Use **Export backup** regularly. Invoices and number sequences are not automatically shared across employee devices.
+
+For a **native iOS app**, on a Mac with Xcode run:
+
+```bash
+npm install
+npx cap add ios
+npx cap sync ios
+npx cap open ios
+```
+
+Sign in Xcode with your Apple development team to install or publish via TestFlight/App Store. A signed IPA is not produced by this repository's web workflow.
