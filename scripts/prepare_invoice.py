@@ -1,26 +1,24 @@
-"""Fetch the exact reviewed invoice, verify it, and add Android print/backup hooks."""
-from pathlib import Path
-import hashlib
-import subprocess
+"""Package the exact same versioned Steel Rock app on iPhone and Android.
 
-url = "https://d2ol7oe51mr4n9.cloudfront.net/user_3LCr1wkQuRvYbQtlwCA7McZeotK/dd96c34a-797c-47e0-b1a9-c90e75d85b08.html"
-target = Path("app/src/main/assets/index.html")
-target.parent.mkdir(parents=True, exist_ok=True)
-subprocess.run(["curl", "--fail", "--location", "--silent", "--show-error", "--retry", "3", url, "--output", str(target)], check=True)
-data = target.read_bytes()
-expected = "36fb72a580f6878eeba3bbad85551aab900d9d96507cec59336949d69f5188c5"
-if hashlib.sha256(data).hexdigest() != expected:
-    raise SystemExit("Invoice checksum mismatch; refusing to build unreviewed content")
-html = data.decode("utf-8")
-old = "window.print();if(beforeBlank){current=beforeBlank;beforeBlank=null;render()}"
-new = "window.addEventListener('afterprint',()=>{if(beforeBlank){current=beforeBlank;beforeBlank=null;render()}},{once:true});window.print()"
-assert old in html
-html = html.replace(old, new)
-bridge = """<script>
-window.print=()=>InvoiceAndroid.printInvoice();
-document.querySelector('#backup').onclick=()=>{db.draft=current;InvoiceAndroid.saveBackup(JSON.stringify(db,null,2));};
-</script>"""
-html = html.replace("</body>", bridge + "</body>")
-assert "PST 5%" in html and "GST / HST" not in html and "length:18" in html
-target.write_text(html, encoding="utf-8")
-print("Verified and prepared 18-row invoice with 5% PST.")
+No network downloads: every Android web asset is copied from the repository's web/
+folder. Both platforms share one design and one set of invoice functions.
+"""
+from pathlib import Path
+import shutil
+
+source = Path("web")
+target = Path("app/src/main/assets")
+if not (source / "index.html").is_file():
+    raise SystemExit("Shared Steel Rock web/index.html is missing")
+target.mkdir(parents=True, exist_ok=True)
+for item in source.rglob("*"):
+    if item.is_file():
+        output = target / item.relative_to(source)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(item, output)
+html = (target / "index.html").read_text(encoding="utf-8")
+required = ["ROWS=18", "INITIAL=3959", "amount(0)*.15", "subtotal*.05", "InvoiceAndroid.printInvoice", "InvoiceAndroid.saveBackup"]
+missing = [value for value in required if value not in html]
+if missing:
+    raise SystemExit(f"App checks failed: missing {missing}")
+print("Android bundled the SAME 18-row, 5% PST, 15% fuel invoice app used by iPhone.")
