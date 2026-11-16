@@ -1,0 +1,20 @@
+{
+  "name": "Steel Rock Invoice Manager",
+  "short_name": "Steel Rock",
+  "description": "Offline invoice manager for Steel Rock Energy Services Ltd.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#101319",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
