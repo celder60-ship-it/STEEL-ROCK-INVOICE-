@@ -10,6 +10,7 @@ import android.view.*;
 import android.widget.Toast;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 public class MainActivity extends Activity {
     private WebView web;
@@ -35,14 +36,32 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(), "InvoiceAndroid");
         web.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return !request.getUrl().toString().equals(ORIGIN + "index.html");
+                return !"invoice.local".equals(request.getUrl().getHost());
             }
             @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                if (request.getUrl().toString().equals(ORIGIN + "index.html")) {
-                    try { return new WebResourceResponse("text/html", "UTF-8", getAssets().open("index.html")); }
-                    catch (IOException e) { }
+                Uri uri = request.getUrl();
+                if (!"https".equals(uri.getScheme()) || !"invoice.local".equals(uri.getHost())) {
+                    return emptyResponse();
                 }
-                return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
+                String path = uri.getPath();
+                if (path == null || path.equals("/")) path = "/index.html";
+                if (path.startsWith("/")) path = path.substring(1);
+                // Strict allowlist protects the Android bundled assets from path traversal.
+                if (path.isEmpty() || path.contains("..") || !path.matches("[A-Za-z0-9_./-]+")) {
+                    return emptyResponse();
+                }
+                try {
+                    String lower = path.toLowerCase(Locale.ROOT);
+                    String mime = "application/octet-stream";
+                    if (lower.endsWith(".html")) mime = "text/html";
+                    else if (lower.endsWith(".svg")) mime = "image/svg+xml";
+                    else if (lower.endsWith(".png")) mime = "image/png";
+                    else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) mime = "image/jpeg";
+                    else if (lower.endsWith(".js")) mime = "application/javascript";
+                    else if (lower.endsWith(".css")) mime = "text/css";
+                    else if (lower.endsWith(".webmanifest") || lower.endsWith(".json")) mime = "application/json";
+                    return new WebResourceResponse(mime, "UTF-8", getAssets().open(path));
+                } catch (IOException e) { return emptyResponse(); }
             }
         });
         web.setWebChromeClient(new WebChromeClient() {
@@ -67,17 +86,20 @@ public class MainActivity extends Activity {
         web.loadUrl(ORIGIN + "index.html");
     }
 
+    private static WebResourceResponse emptyResponse() {
+        return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
+    }
     private class Bridge {
         @JavascriptInterface public void printInvoice() { runOnUiThread(() -> printDocument()); }
-        @JavascriptInterface public void saveBackup(String text) {
-            if (text == null || text.length() > 10000000) return;
+        @JavascriptInterface public void saveBackup(String data) {
+            if (data == null || data.length() > 10000000) return;
             runOnUiThread(() -> {
                 if (pendingBackup != null) return;
-                pendingBackup = text;
+                pendingBackup = data;
                 Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
                 intent.setType("application/json");
-                intent.putExtra(Intent.EXTRA_TITLE, "Steel-Rock-Invoice-Backup.json");
+                intent.putExtra(Intent.EXTRA_TITLE, "Steel-Rock-Invoices-Backup.json");
                 try { startActivityForResult(intent, EXPORT); }
                 catch (ActivityNotFoundException e) { pendingBackup = null; message("No file picker available."); }
             });
