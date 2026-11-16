@@ -1,47 +1,25 @@
-# Steel Rock Invoice for Android
+# Steel Rock Invoice — iPhone and Android
 
-Offline Android wrapper for the 18-row invoice with PST fixed at 5%, no GST, and the existing 15% fuel surcharge. Company information and images are bundled. No login or internet permission.
+**One shared app design and one set of invoice functions on both platforms.** Edit the shared `web/index.html` to update both versions at the next build.
 
-## Build through GitHub
-Push changes to main to trigger a build.
-Open Actions > Build Android APK. After it succeeds, download Steel-Rock-Invoice-APK, extract the ZIP, and install app-debug.apk.
-You can also run it manually using Run workflow.
-GitHub Actions availability and account limits apply.
+The invoice uses black-and-white pumpjack branding and the same invoice editor, one-page Letter-size preview, 18 line items, automatic 15% fuel surcharge on the first item, PST 5% (no GST), auto-incrementing invoice numbers from 03959, editable company and customer details, saved invoices, invoice deletion, JSON backup import/export, and PDF printing.
 
-This is an installable debug build, not a Play Store release. Each clean build may have a different debug signing key. Export invoice backups before replacing or uninstalling the app. A stable release key is needed for ongoing upgrade distribution.
+## Install the iPhone version
+The GitHub Pages published version of `web/` works as an installable home-screen web app, including offline use after the first visit. In Safari, open https://celder60-ship-it.github.io/STEEL-ROCK-INVOICE-/ then use Share → Add to Home Screen. No ChatGPT login. This is **not** a signed IPA or App Store build.
 
-## Using the app
-- Save invoice stores records inside the app on this device.
-- Print / Save PDF opens Android's print dialog; choose Save as PDF.
-- Export backup opens Android's file picker for a JSON backup.
-- Import backup opens Android's file picker and replaces local data after confirmation.
-- Existing browser invoices do not move automatically: export from the browser app, then import here.
-- Devices have separate invoice lists and number sequences; there is no shared counter.
-- Extra rows or long descriptions can require more than one printed page.
+## Build the Android APK
+Every push to main triggers **Actions → Build Android APK**. Open the successful run, choose the `Steel-Rock-Invoice-APK` artifact, unzip it, then install `app-debug.apk`. The APK bundles all `web/` files offline and has native Print / Save as PDF and native Android file-picker JSON export/import. No sign-in or internet permission.
 
-The build downloads the reviewed invoice HTML from a fixed URL and verifies its SHA-256 before packaging it. The installed app works offline.
+**Important upgrade note:** Before replacing an older Steel Rock Android APK, open the old app and export a backup. Existing data may use an older schema or be tied to a different debug-signing key; do not uninstall the old APK until invoices have been backed up. The importer accepts compatible older exports with `draft` instead of `current`, but unsupported older formats may require conversion.
 
-## Status
-Source prepared; Android compilation and device testing pending the first GitHub Actions run.
+Invoices are saved locally **per device**. Different employees do **not** share invoice sequences automatically. To move invoices, export a JSON backup and import it on the other device; there is no live multi-user sync.
 
+## How both apps stay identical
+`web/index.html` is the single shared interface and invoice business logic. `scripts/prepare_invoice.py` copies `web/` into the Android assets directory before compiling. The Android `MainActivity.java` loads those bundled assets, and routes print/export to Android's native print/file pickers. The GitHub Pages workflow publishes the exact same `web/` on iPhone.
 
----
+## Development
+- `Actions → Publish Steel Rock iPhone App` deploys the PWA.
+- `Actions → Build Android APK` builds the Android debug app.
+- The optional Capacitor configuration can be used to create a native Xcode iOS project on a Mac; Apple code signing is required for IPA/TestFlight/App Store distribution.
 
-## iPhone / iOS version
-
-A new offline-capable iPhone invoice app is available in the [web/](web/) folder. It uses the same Steel Rock invoice requirements: 18 rows, number 03959 onward, a 15% surcharge on the first charge, 5% PST only (no GST), one-page Letter invoice print/PDF, and an angled black pumpjack watermark.
-
-**Install without an Apple Developer account:** Under this repository's **Settings → Pages**, choose **GitHub Actions** as the publishing source. Once the *Publish Steel Rock iPhone App* workflow deploys, open the Pages URL in **Safari** on the iPhone. Choose **Share → Add to Home Screen → Open as Web App → Add**.
-
-Invoices save locally and work without a ChatGPT sign-in. Use **Print / PDF** followed by **Save to Files** to save an invoice PDF in a phone folder. Use **Export backup** regularly. Invoices and number sequences are not automatically shared across employee devices.
-
-For a **native iOS app**, on a Mac with Xcode run:
-
-```bash
-npm install
-npx cap add ios
-npx cap sync ios
-npx cap open ios
-```
-
-Sign in Xcode with your Apple development team to install or publish via TestFlight/App Store. A signed IPA is not produced by this repository's web workflow.
+A one-page layout is designed for the supplied 18 rows and short descriptions. Excessively long descriptions may overflow printed cells and should be reviewed before sending.
