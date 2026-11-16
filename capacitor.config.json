@@ -1,0 +1,7 @@
+{
+  "appId":"ca.steelrock.invoices",
+  "appName":"Steel Rock Invoices",
+  "webDir":"web",
+  "ios":{"contentInset":"always"},
+  "server":{"androidScheme":"https","iosScheme":"capacitor"}
+}

@@ -1,0 +1,9 @@
+{
+  "name":"steel-rock-invoices",
+  "private":true,
+  "version":"1.0.0",
+  "description":"Steel Rock invoice PWA and optional iOS Capacitor wrapper",
+  "scripts":{"dev":"npx serve web","ios:add":"npx cap add ios","ios:sync":"npx cap sync ios","ios:open":"npx cap open ios"},
+  "dependencies":{"@capacitor/core":"^7.4.0","@capacitor/ios":"^7.4.0"},
+  "devDependencies":{"@capacitor/cli":"^7.4.0"}
+}
