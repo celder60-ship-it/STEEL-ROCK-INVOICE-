@@ -37,6 +37,24 @@ aside{background:#f9f9f9}
 .table-actions{flex-wrap:wrap;align-items:center}
 #line-count{font-size:12px;color:#444;white-space:nowrap}
 @media print{th.row-action,td.row-action,col.row-action,.remove,#line-count{display:none!important}}
+/* Keep the tax and final total at the bottom of the printed invoice, not
+   immediately after the last charge line. Both platforms share this sheet. */
+.paper{display:flex;flex-direction:column;min-height:1056px}
+.paper>.bottom{margin-top:auto}
+@media print{
+  @page{size:letter;margin:0}
+  html,body{width:8.5in!important;max-width:8.5in!important;height:11in!important;margin:0!important;padding:0!important}
+  .shell,main{width:8.5in!important;height:11in!important;margin:0!important;padding:0!important;overflow:visible!important}
+  .paper{width:8.5in!important;height:11in!important;min-height:11in!important;max-height:11in!important;display:flex!important;flex-direction:column!important;box-sizing:border-box!important;padding:9mm 9mm 9mm 12mm!important;margin:0!important;overflow:hidden!important;break-inside:avoid!important;page-break-inside:avoid!important}
+  .paper:before{left:6mm!important;top:9mm!important;bottom:9mm!important}
+  .side-brand{left:1mm!important}
+  .table-wrap{flex:0 1 auto;min-height:0}
+  .bottom{margin-top:auto!important;flex-shrink:0!important;break-inside:avoid!important;page-break-inside:avoid!important}
+  .totals{break-inside:avoid!important;page-break-inside:avoid!important}
+  thead{display:table-header-group}
+  tr{break-inside:avoid!important;page-break-inside:avoid!important}
+  td{height:23px!important}
+}
 </style><script>
 (function migrateModernSavedInvoices(){
   try {
@@ -86,7 +104,13 @@ $('#note').onclick=()=>{current.rows.push(blankRow());renderRows();$('[data-r="d
 $('#save').onclick=()=>{if(!current.number.trim()){toast('Add an invoice number before saving.');$('[data-f="number"]').focus();return}if(db.invoices.some(i=>i.id!==current.id&&i.number===current.number)){toast('That invoice number already exists. Choose a unique number.');return}const i=db.invoices.findIndex(i=>i.id===current.id);if(i>=0)db.invoices[i]=structuredClone(current);else db.invoices.unshift(structuredClone(current));persist();savedList();toast('Invoice saved on this device')};
 $('#new').onclick=()=>{if(!confirm('Start a blank invoice? Save your current invoice first if you need to keep it.'))return;current=fresh();render();persist()};
 $('#duplicate').onclick=()=>{current=structuredClone(current);current.id=uid();current.number=String(Math.max(Number(current.number)||3958,Number(nextNumber())-1)+1).padStart(5,'0');render();persist();toast('Copy created with a new invoice number.')};$('#delete').onclick=()=>{if(!confirm('Delete this invoice and its draft? This cannot be undone.'))return;db.invoices=db.invoices.filter(i=>i.id!==current.id);current=fresh();render();persist()};
-$('#print').onclick=()=>{resize();document.title='Invoice-'+(current.number||'draft');window.print()};let beforeBlank=null;$('#blank').onclick=()=>{beforeBlank=current;current=fresh();current.business={...beforeBlank.business};current.number='';current.gst=0;current.pst=5;render();$$('.totals strong,.totals div>span:last-child:not(:first-child)').forEach(e=>{if(!e.querySelector('input'))e.textContent=''});window.addEventListener('afterprint',()=>{if(beforeBlank){current=beforeBlank;beforeBlank=null;render()}},{once:true});window.print()};
+function checkOnePage(){
+  const numberOfRows=current.rows.length;
+  const longText=current.rows.filter(r=>String(r.description||'').length>145).length;
+  if(numberOfRows>24||longText>0)return confirm('This invoice has '+numberOfRows+' lines'+(longText?' and very long descriptions':'')+'. To keep all details on one printed page, shorten descriptions or delete extra lines first. Print anyway?');
+  return true;
+}
+$('#print').onclick=()=>{if(!checkOnePage())return;resize();document.title='Invoice-'+(current.number||'draft');window.print()};let beforeBlank=null;$('#blank').onclick=()=>{beforeBlank=current;current=fresh();current.business={...beforeBlank.business};current.number='';current.gst=0;current.pst=5;render();$$('.totals strong,.totals div>span:last-child:not(:first-child)').forEach(e=>{if(!e.querySelector('input'))e.textContent=''});window.addEventListener('afterprint',()=>{if(beforeBlank){current=beforeBlank;beforeBlank=null;render()}},{once:true});window.print()};
 $('#settings').onclick=()=>{$('#businessfields').innerHTML=Object.entries({name:'Company name',address:'Address',email:'Email',phone:'Phone',tax:'Tax registration number'}).map(([k,v])=>`<label>${v}<input name="${k}" value="${esc(db.business[k]||current.business[k]||'')}"></label>`).join('');$('#business').showModal()};$('#cancel').onclick=()=>$('#business').close();$('#businessform').onsubmit=e=>{e.preventDefault();db.business=Object.fromEntries(new FormData(e.target));current.business={...db.business};render();persist();$('#business').close();toast('Business details saved')};
 $('#backup').onclick=()=>{db.draft=current;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));a.download='Steel-Rock-Invoices-Backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};$('#restore').onclick=()=>$('#file').click();
 function validInvoice(i){return i&&typeof i.id==='string'&&i.business&&typeof i.business==='object'&&typeof i.number==='string'&&Array.isArray(i.rows)&&i.rows.every(r=>r&&['qty','description','price','unit'].every(k=>['string','number'].includes(typeof r[k])))&&['gst','pst'].every(k=>Number.isFinite(Number(i[k]))&&Number(i[k])>=0&&Number(i[k])<=100)}
