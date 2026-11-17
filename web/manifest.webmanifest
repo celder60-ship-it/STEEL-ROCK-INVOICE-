@@ -1,7 +1,7 @@
 {
-  "name": "Steel Rock Invoice Manager",
-  "short_name": "Steel Rock",
-  "description": "Offline invoice manager for Steel Rock Energy Services Ltd.",
+  "name": "Steel Rock Invoice",
+  "short_name": "Steel Rock Invoice",
+  "description": "Steel Rock Energy Services invoice manager",
   "id": "./",
   "start_url": "./",
   "scope": "./",
