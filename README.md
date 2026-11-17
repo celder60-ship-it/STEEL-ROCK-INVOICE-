@@ -31,3 +31,13 @@ Every push to `main` triggers **Actions → Build Android APK**. Open the succes
 Saved invoices and invoice-number sequences are **per device**, not shared live between employees. An exported backup can be imported to move data, but this does not provide multi-user synchronization.
 
 The GitHub Pages workflow deploys `web/` for iPhone; `scripts/prepare_invoice.py` packages that same source into the Android APK. Capacitor/Xcode signing is required if you want a native App Store iOS application.
+
+
+## Deleting invoice lines and one-page totals
+
+In both iPhone and Android versions:
+- Tap the **red × to the left** of any line to remove it, or select **− Delete last line**.
+- Line count updates immediately, the invoice re-calculates, and deleted lines are not automatically added back when you save/reopen it.
+- If you delete the automatic fuel line, **＋ Add 15% fuel line** restores it.
+- **Subtotal, PST 5%, and Total Due (CAD)** stay in a box at the bottom of the Letter-size invoice, even when you remove rows. GST is not charged.
+- Printing uses a single Letter-size page. If you add more than 24 lines or unusually long descriptions, the app warns before printing because that much content may be clipped. Review the print preview before delivering the invoice.
