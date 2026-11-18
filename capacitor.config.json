@@ -1,7 +1,13 @@
 {
-  "appId":"ca.steelrock.invoices",
-  "appName":"Steel Rock Invoices",
-  "webDir":"web",
-  "ios":{"contentInset":"always"},
-  "server":{"androidScheme":"https","iosScheme":"capacitor"}
+  "appId": "ca.steelrock.invoices",
+  "appName": "Steel Rock Invoice",
+  "webDir": "web",
+  "ios": {
+    "contentInset": "always",
+    "scheme": "Steel Rock Invoice"
+  },
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "capacitor"
+  }
 }

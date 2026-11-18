@@ -41,3 +41,20 @@ In both iPhone and Android versions:
 - If you delete the automatic fuel line, **＋ Add 15% fuel line** restores it.
 - **Subtotal, PST 5%, and Total Due (CAD)** stay in a box at the bottom of the Letter-size invoice, even when you remove rows. GST is not charged.
 - Printing uses a single Letter-size page. If you add more than 24 lines or unusually long descriptions, the app warns before printing because that much content may be clipped. Review the print preview before delivering the invoice.
+
+
+## Native iPhone iOS app (.ipa)
+
+**Build source:** `package.json` + `capacitor.config.json` + `web/` are wrapped into the native **Steel Rock Invoice** app using Capacitor 7. Its bundle ID is `ca.steelrock.invoices`.
+
+**Automatic iOS build:** Open **Actions → Build Steel Rock iPhone IPA (unsigned)**. Each build runs on a GitHub macOS runner and produces:
+- `Steel-Rock-iPhone-UNSIGNED-IPA`: contains an **unsigned** `.ipa` for signing/sideloading; **cannot be installed directly** by tapping the file.
+- `Steel-Rock-iOS-Xcode-Source`: native Xcode project and app source for local Apple signing.
+
+**Install to a personal iPhone with a Mac:** Download the Xcode source ZIP, extract, run `npm install` from its root if needed, open `ios/App/App.xcworkspace` in Xcode, choose the App target → Signing & Capabilities → your Apple Team, connect the iPhone, select it, and run. Xcode can use a free personal Apple Account for limited device testing; App Store/TestFlight distribution requires suitable Apple Developer membership and signing. **Do not put Apple credentials or certificate passwords in GitHub source code.**
+
+The native iOS app keeps the existing 18-line original invoice format, per-line delete buttons, bottom-aligned subtotal/PST/total, 15% fuel surcharge, 5% PST and no GST. Its native iPhone bridge calls the iOS print dialog and exports JSON backups to Files via the iPhone share sheet. Native print/export should be tested on an actual device.
+
+**Data warning:** The native iOS app and Safari/Home Screen web app use **different local storage containers**. Before switching to a native version, **Export backup** from your existing web app; use **Import backup** in the native app to move invoices. Do not delete existing app data until verified.
+
+**Simplest no-signing option:** Continue to use the iPhone Home Screen app at https://celder60-ship-it.github.io/STEEL-ROCK-INVOICE-/ → Safari Share → Add to Home Screen. This still provides offline invoice work but is not a separately signed IPA.

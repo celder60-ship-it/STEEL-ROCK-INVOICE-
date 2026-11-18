@@ -147,4 +147,4 @@ if (window.InvoiceAndroid) {
   document.querySelector('#backup').onclick=()=>{db.draft=current;InvoiceAndroid.saveBackup(JSON.stringify(db,null,2));};
 }
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
-</script></body></html>
+</script><script src="native-ios.js"></script></body></html>
