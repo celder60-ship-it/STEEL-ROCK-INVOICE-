@@ -16,8 +16,10 @@ public class MainActivity extends Activity {
     private WebView web;
     private ValueCallback<Uri[]> chooser;
     private String pendingBackup;
+    private byte[] pendingInvoice;
+    private String pendingInvoiceName;
     private static final String ORIGIN = "https://invoice.local/";
-    private static final int IMPORT = 100, EXPORT = 101;
+    private static final int IMPORT = 100, EXPORT = 101, EXPORT_INVOICE = 102;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -91,10 +93,40 @@ public class MainActivity extends Activity {
     }
     private class Bridge {
         @JavascriptInterface public void printInvoice() { runOnUiThread(() -> printDocument()); }
+        @JavascriptInterface public void saveInvoiceFile(String base64, String name, String mime) {
+            if (base64 == null || base64.length() > 24000000 || name == null ||
+                !name.matches("Invoice-[A-Za-z0-9_-]{1,80}\\.(pdf|png)") ||
+                !("application/pdf".equals(mime) && name.endsWith(".pdf") ||
+                "image/png".equals(mime) && name.endsWith(".png"))) {
+                runOnUiThread(() -> message("Unable to export this invoice."));
+                return;
+            }
+            final byte[] bytes;
+            try { bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT); }
+            catch (IllegalArgumentException e) {
+                runOnUiThread(() -> message("Invalid invoice file.")); return;
+            }
+            runOnUiThread(() -> {
+                if (pendingInvoice != null || pendingBackup != null) {
+                    message("Finish the open file picker first."); return;
+                }
+                pendingInvoice = bytes;
+                pendingInvoiceName = name;
+                Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType(mime);
+                intent.putExtra(Intent.EXTRA_TITLE, name);
+                try { startActivityForResult(intent, EXPORT_INVOICE); }
+                catch (ActivityNotFoundException e) {
+                    pendingInvoice = null; pendingInvoiceName = null;
+                    message("No file picker available.");
+                }
+            });
+        }
         @JavascriptInterface public void saveBackup(String data) {
             if (data == null || data.length() > 10000000) return;
             runOnUiThread(() -> {
-                if (pendingBackup != null) return;
+                if (pendingBackup != null || pendingInvoice != null) return;
                 pendingBackup = data;
                 Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -136,6 +168,18 @@ public class MainActivity extends Activity {
             chooser.onReceiveValue(result == RESULT_OK && data != null && data.getData() != null
                 ? new Uri[]{data.getData()} : null);
             chooser = null;
+        }
+        if (request == EXPORT_INVOICE) {
+            byte[] bytes = pendingInvoice;
+            String name = pendingInvoiceName;
+            pendingInvoice = null; pendingInvoiceName = null;
+            if (result == RESULT_OK && data != null && data.getData() != null && bytes != null) {
+                try (OutputStream out = getContentResolver().openOutputStream(data.getData(), "wt")) {
+                    if (out == null) throw new IOException("No output stream");
+                    out.write(bytes);
+                    message("Saved " + name);
+                } catch (IOException e) { message("Could not save invoice. Please try again."); }
+            }
         }
         if (request == EXPORT) {
             String backup = pendingBackup;
