@@ -25,8 +25,9 @@ jobs:
         run: node scripts/test_invoice_exports.cjs
       - name: Verify one-page PDF geometry and PNG resolution
         run: |
-          python3 -m pip install --user pypdf Pillow
-          python3 - <<'PY'
+          python3 -m venv /tmp/export-verify
+          /tmp/export-verify/bin/pip install pypdf Pillow
+          /tmp/export-verify/bin/python - <<'PY'
           from pypdf import PdfReader
           from PIL import Image
           p=PdfReader('export-test/Invoice-90001.pdf')
