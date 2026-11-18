@@ -98,7 +98,7 @@
     function measureRows(size){
       font(ctx,size);
       return rows.map(r=>{
-        const lines=Math.max(wrap(ctx,r.description,colWidths[1]-10).length,wrap(ctx,r.unit,colWidths[3]-8).length);
+        const lines=Math.max(wrap(ctx,r.description,colWidths[1]-10).length,wrap(ctx,r.unit,colWidths[3]-8).length,wrap(ctx,r.qty,colWidths[0]-8).length,wrap(ctx,r.price,colWidths[2]-8).length);
         return Math.max(16,lines*(size*1.13)+6);
       });
     }
@@ -111,7 +111,7 @@
     const extra=rows.length?Math.min(4,spare/rows.length):0;
     heights=heights.map(h=>h+extra);
     if(hasWatermark&&rows.length){
-      ctx.save();ctx.translate(left+width/2,bodyY+available/2);ctx.rotate(-12*Math.PI/180);
+      ctx.save();ctx.beginPath();ctx.rect(left,bodyY,width,available);ctx.clip();ctx.translate(left+width/2,bodyY+available/2);ctx.rotate(-12*Math.PI/180);
       ctx.globalAlpha=.08;const iw=width*.77,ih=iw*wm.naturalHeight/wm.naturalWidth;
       ctx.drawImage(wm,-iw/2,-ih/2,iw,ih);ctx.restore();
     }
@@ -196,7 +196,7 @@
     try{
       calc();
       const snapshot=JSON.parse(JSON.stringify(current));
-      const filename='Invoice-'+(String(snapshot.number||'draft').replace(/[^a-zA-Z0-9_-]/g,'_')||'draft')+'.'+format;
+      const filename='Invoice-'+(String(snapshot.number||'draft').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,80)||'draft')+'.'+format;
       const canvas=await renderInvoice(snapshot);
       const blob=format==='pdf'?await createPDF(canvas):await canvasBlob(canvas,'image/png');
       await saveFile(blob,filename);
