@@ -1,0 +1,74 @@
+name: Build Steel Rock iPhone IPA (unsigned)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/build-ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Capacitor and native plugins
+        run: npm install --no-audit --no-fund
+      - name: Generate Steel Rock iOS Xcode project
+        run: |
+          npx cap add ios
+          npx cap sync ios
+      - name: Build unsigned device app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          mkdir -p .ios-build
+          if [ -d ios/App/App.xcworkspace ]; then
+            PROJECT_OPTS=(-workspace ios/App/App.xcworkspace)
+          else
+            PROJECT_OPTS=(-project ios/App/App.xcodeproj)
+          fi
+          xcodebuild ${PROJECT_OPTS[@]} \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$PWD/.ios-build/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            build
+      - name: Package IPA and Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH=$(find .ios-build/DerivedData/Build/Products/Release-iphoneos -maxdepth 1 -type d -name '*.app' -print -quit)
+          test -n "$APP_PATH"
+          mkdir -p .ios-build/Payload
+          ditto "$APP_PATH" .ios-build/Payload/SteelRockInvoice.app
+          (cd .ios-build && zip -q -r Steel-Rock-Invoice-UNSIGNED.ipa Payload)
+          zip -q -r .ios-build/Steel-Rock-iOS-Xcode-Source.zip ios web package.json capacitor.config.json
+          ls -lh .ios-build/*.ipa .ios-build/*.zip
+      - name: Upload unsigned iPhone IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Steel-Rock-iPhone-UNSIGNED-IPA
+          path: .ios-build/Steel-Rock-Invoice-UNSIGNED.ipa
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload native Xcode project
+        uses: actions/upload-artifact@v4
+        with:
+          name: Steel-Rock-iOS-Xcode-Source
+          path: .ios-build/Steel-Rock-iOS-Xcode-Source.zip
+          if-no-files-found: error
+          retention-days: 30
