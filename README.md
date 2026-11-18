@@ -58,3 +58,12 @@ The native iOS app keeps the existing 18-line original invoice format, per-line 
 **Data warning:** The native iOS app and Safari/Home Screen web app use **different local storage containers**. Before switching to a native version, **Export backup** from your existing web app; use **Import backup** in the native app to move invoices. Do not delete existing app data until verified.
 
 **Simplest no-signing option:** Continue to use the iPhone Home Screen app at https://celder60-ship-it.github.io/STEEL-ROCK-INVOICE-/ → Safari Share → Add to Home Screen. This still provides offline invoice work but is not a separately signed IPA.
+
+
+## Save PDF / Save Image (PNG)
+
+All versions now share two offline invoice export buttons. **Save PDF** creates a single US Letter (8.5 × 11 inch) image-based PDF. **Save Image (PNG)** creates a sharp 2550 × 3300 pixel image. Both exports use the current invoice's company logo, watermark, editable fields, line amounts and calculated tax totals; no app menus, edit buttons or browser bars are included. The PDF uses a high-resolution embedded JPEG sheet (text is not selectable). Excessively long content is rejected rather than silently clipped.
+
+On Android, choose a folder and filename in the system file picker. In the native iPhone app, choose Save to Files or another available share-sheet action. Safari/Home Screen uses a browser file download. Save invoice remains the editable local record; PDF/PNG export does not replace JSON backup. Native iOS install requires Apple signing, and app installation/printing/export needs on-device verification.
+
+The "Test invoice PDF and PNG exports" GitHub Actions workflow checks mobile browser downloads, calculation accuracy, one-page PDF size, and PNG pixel dimensions.

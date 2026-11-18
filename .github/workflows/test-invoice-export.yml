@@ -1,0 +1,44 @@
+name: Test invoice PDF and PNG exports
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/test-invoice-export.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install headless browser
+        run: |
+          npm install --prefix /tmp/steel-rock-export-test playwright --no-audit --no-fund
+          /tmp/steel-rock-export-test/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify offline invoice exports
+        env:
+          NODE_PATH: /tmp/steel-rock-export-test/node_modules
+        run: node scripts/test_invoice_exports.cjs
+      - name: Verify one-page PDF geometry and PNG resolution
+        run: |
+          python3 -m venv /tmp/export-verify
+          /tmp/export-verify/bin/pip install pypdf Pillow
+          /tmp/export-verify/bin/python - <<'PY'
+          from pypdf import PdfReader
+          from PIL import Image
+          p=PdfReader('export-test/Invoice-90001.pdf')
+          assert len(p.pages)==1
+          assert float(p.pages[0].mediabox.width)==612
+          assert float(p.pages[0].mediabox.height)==792
+          assert Image.open('export-test/Invoice-90001.png').size==(2550,3300)
+          print('Verified Letter-size single-page PDF and 300 dpi image')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Invoice-export-test-samples
+          path: export-test/
+          retention-days: 7
