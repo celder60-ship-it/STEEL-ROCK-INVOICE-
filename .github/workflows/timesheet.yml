@@ -1,0 +1,63 @@
+name: Build Steel Rock Timesheet apps
+on:
+  push:
+    branches: [main]
+    paths: ['web/timesheet/**','scripts/prepare_timesheet.py','.github/workflows/timesheet.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - run: python3 scripts/prepare_timesheet.py
+      - run: gradle --no-daemon :app:assembleDebug :app:lintDebug
+      - run: cp app/build/outputs/apk/debug/app-debug.apk Steel-Rock-Timesheet.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Steel-Rock-Timesheet-APK
+          path: Steel-Rock-Timesheet.apk
+          if-no-files-found: error
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configure separate iOS app
+        run: |
+          node -e "const fs=require('fs');const p=require('./capacitor.config.json');p.appId='ca.steelrock.timesheet';p.appName='Steel Rock Timesheet';p.webDir='web/timesheet';p.ios.scheme='Steel Rock Timesheet';fs.writeFileSync('capacitor.config.json',JSON.stringify(p,null,2))"
+          npm install --no-audit --no-fund
+          npx cap add ios
+          npx cap sync ios
+      - name: Build unsigned iPhone app
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d ios/App/App.xcworkspace ]; then
+            PROJECT_OPTS=(-workspace ios/App/App.xcworkspace)
+          else
+            PROJECT_OPTS=(-project ios/App/App.xcodeproj)
+          fi
+          xcodebuild "${PROJECT_OPTS[@]}" -scheme App -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath "$PWD/.timesheet-build" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          APP_PATH=$(find .timesheet-build/Build/Products/Release-iphoneos -maxdepth 1 -type d -name '*.app' -print -quit)
+          test -n "$APP_PATH"
+          mkdir -p package/Payload
+          ditto "$APP_PATH" package/Payload/SteelRockTimesheet.app
+          (cd package && zip -q -r Steel-Rock-Timesheet-UNSIGNED.ipa Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Steel-Rock-Timesheet-UNSIGNED-IPA
+          path: package/Steel-Rock-Timesheet-UNSIGNED.ipa
+          if-no-files-found: error
