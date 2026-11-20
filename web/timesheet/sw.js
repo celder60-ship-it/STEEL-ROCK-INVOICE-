@@ -1,0 +1,5 @@
+const KEY='steel-rock-timesheet-static-v1';
+const files=['./','./index.html','./app.js','./export.js','./manifest.webmanifest','./icon.svg'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(KEY).then(c=>c.addAll(files)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('steel-rock-timesheet-static-')&&k!==KEY).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET'||!r.url.startsWith(self.registration.scope))return;e.respondWith(fetch(r).then(res=>{if(res.ok){const copy=res.clone();caches.open(KEY).then(c=>c.put(r,copy)).catch(()=>{})}return res}).catch(async()=>await caches.match(r)||(r.mode==='navigate'?await caches.match('./index.html'):Response.error())))});
