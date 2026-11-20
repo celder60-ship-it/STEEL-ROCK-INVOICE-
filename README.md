@@ -67,3 +67,10 @@ All versions now share two offline invoice export buttons. **Save PDF** creates 
 On Android, choose a folder and filename in the system file picker. In the native iPhone app, choose Save to Files or another available share-sheet action. Safari/Home Screen uses a browser file download. Save invoice remains the editable local record; PDF/PNG export does not replace JSON backup. Native iOS install requires Apple signing, and app installation/printing/export needs on-device verification.
 
 The "Test invoice PDF and PNG exports" GitHub Actions workflow checks mobile browser downloads, calculation accuracy, one-page PDF size, and PNG pixel dimensions.
+
+
+## Steel Rock Timesheet & Logbook (separate app)
+
+Open https://celder60-ship-it.github.io/STEEL-ROCK-INVOICE-/timesheet/ and install using Safari Share → Add to Home Screen (or Android browser Install app, where supported). No login is required. Daily records are stored locally, with weekly Monday–Sunday totals, overnight shifts, breaks, extra travel hours, kilometres, job/site/unit and work description. Travel is additional time outside the recorded work shift. Entries can be edited/deleted; PDF supports multiple pages, PNG is available for single-page reports, CSV for spreadsheets, and JSON backup for transferring records. Typed confirmation is not a verified signature. This is a timesheet, not certified driver ELD or payroll/overtime software. Keep backups; employees do not automatically sync.
+
+GitHub Actions → **Build Steel Rock Timesheet apps** produces a separate Android APK (com.steelrock.timesheet) and an unsigned iOS IPA (ca.steelrock.timesheet). Those builds do not replace Steel Rock Invoice. The IPA requires Apple signing. Web and native devices have independent local data.
