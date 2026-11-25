@@ -302,6 +302,7 @@
     }catch(e){console.error(e);alert(e?.message||'Unable to export this invoice. Please try again.')}
     finally{exporting=false;buttons.forEach(b=>b.disabled=false)}
   }
+  if(isIphoneBrowser())document.querySelector('#save-image').textContent='Save Image / Photos';
   document.querySelector('#save-pdf').onclick=()=>exportInvoice('pdf');
   document.querySelector('#save-image').onclick=()=>exportInvoice('png');
 })();
