@@ -178,7 +178,7 @@
   function showIphoneImageSave(blob,filename){
     const id='steelRockImageSave';
     const old=document.getElementById(id);
-    if(old){old.close();old.remove()}
+    if(old){if(old.open)old.close();old.remove()}
     if(!document.getElementById('steelRockImageSaveStyle')){
       const style=document.createElement('style');
       style.id='steelRockImageSaveStyle';
@@ -203,6 +203,7 @@
         #steelRockImageSave .save-photo{grid-column:1/-1;background:#16191e;
           border-color:#16191e;color:#fff}
         #steelRockImageSave .image-help{font-size:12px;color:#4b5563}
+        #steelRockImageSave [hidden]{display:none!important}
       `;
     document.head.append(style);
     }
