@@ -77,3 +77,7 @@ GitHub Actions → **Build Steel Rock Timesheet apps** produces a separate Andro
 
 ### Biweekly update
 The selected Monday anchors a 14-day pay period. Previous/Next advances two weeks; Week 1 and Week 2 subtotals are shown. Unpaid break deductions are removed, including from calculated totals of older saved shifts; original records and historical break values remain in storage. Prior weekly sign-offs are retained but are not reused as biweekly approvals. The final sheet preview uses the same branded renderer as the PDF and PNG exports. Equipment details remain available. Long reports can span multiple PDF pages; PNG export is available for single-page reports.
+
+## iPhone: Save Invoice Image to Photos
+
+In the **Steel Rock Invoice** app (not Timesheet), tap **Save Image / Photos**. A full invoice preview appears. Tap **Share / Save to Photos**, then choose **Save Image** in the iPhone share sheet. If that option isn't offered, touch and hold the invoice image or tap **Open full image** and use the iPhone's image-saving action. **Save PNG to Files** is available as a separate choice. This keeps the PDF and Android exports unchanged. In Safari, refresh the page; in the Home Screen app, close and reopen it to install the refreshed version. Existing invoices and backups are unchanged.

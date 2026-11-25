@@ -172,6 +172,101 @@
       const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=reject;reader.readAsDataURL(blob);
     });
   }
+  // iPhone Safari normally downloads images to Files instead of Photos.
+  // Create the PNG first, then require a fresh tap for the iOS share sheet.
+  // The same image stays visible for the long-press Save Image fallback.
+  function showIphoneImageSave(blob,filename){
+    const id='steelRockImageSave';
+    const old=document.getElementById(id);
+    if(old){if(old.open)old.close();old.remove()}
+    if(!document.getElementById('steelRockImageSaveStyle')){
+      const style=document.createElement('style');
+      style.id='steelRockImageSaveStyle';
+      style.textContent=`
+        #steelRockImageSave{box-sizing:border-box;border:0;border-radius:15px;
+          width:min(96vw,650px);max-width:96vw;max-height:92dvh;
+          margin:auto;padding:15px;background:#f3f4f6;color:#171717;
+          box-shadow:0 14px 55px #0005;overflow:auto}
+        #steelRockImageSave::backdrop{background:#0a0d12bb}
+        #steelRockImageSave h2{margin:0 0 5px;font-size:20px}
+        #steelRockImageSave p{margin:6px 0 11px;line-height:1.45;font-size:13px}
+        #steelRockImageSave img{width:100%;height:auto;max-height:58dvh;
+          display:block;object-fit:contain;background:white;border:1px solid #c9cdd3;
+          -webkit-touch-callout:default;user-select:auto}
+        #steelRockImageSave .img-actions{display:grid;grid-template-columns:1fr 1fr;
+          gap:8px;margin:12px 0 8px}
+        #steelRockImageSave button,#steelRockImageSave a{
+          box-sizing:border-box;display:flex;justify-content:center;align-items:center;
+          min-height:44px;padding:9px 8px;border-radius:9px;font-size:13px;
+          font-weight:700;text-decoration:none;text-align:center;cursor:pointer;
+          background:#fff;color:#171717;border:1px solid #bcc2cb}
+        #steelRockImageSave .save-photo{grid-column:1/-1;background:#16191e;
+          border-color:#16191e;color:#fff}
+        #steelRockImageSave .image-help{font-size:12px;color:#4b5563}
+        #steelRockImageSave [hidden]{display:none!important}
+      `;
+    document.head.append(style);
+    }
+    const url=URL.createObjectURL(blob);
+    const file=new File([blob],filename,{type:'image/png'});
+    const dialog=document.createElement('dialog');dialog.id=id;
+    dialog.innerHTML=`
+      <h2>Save invoice image</h2>
+      <p>Choose <b>Save Image</b> in the iPhone share sheet to add this invoice to Photos.</p>
+      <img alt="Full invoice PNG preview. Touch and hold to save this image." />
+      <div class="img-actions">
+        <button type="button" class="save-photo">Share / Save to Photos</button>
+        <a class="open-photo" target="_blank" rel="noopener">Open full image</a>
+        <a class="download-photo" download>Save PNG to Files</a>
+        <button type="button" class="close-photo">Close preview</button>
+      </div>
+      <p class="image-help">If Save Image is missing from the share sheet,
+      touch and hold the image above and choose Save to Photos / Save Image.
+      You can also open the full image first.</p>`;
+    dialog.querySelector('img').src=url;
+    const open=dialog.querySelector('.open-photo');
+    open.href=url;
+    const download=dialog.querySelector('.download-photo');
+    download.href=url;download.download=filename;
+    const share=dialog.querySelector('.save-photo');
+    const supported=typeof navigator.share==='function'&&
+      (typeof navigator.canShare!=='function'||navigator.canShare({files:[file]}));
+    if(!supported){
+      share.hidden=true;
+      dialog.querySelector('p').textContent='Touch and hold the invoice image to save it to Photos, or open the full image.';
+    }else{
+      share.onclick=()=>{
+        // Immediate call from the tap, avoiding expired iOS user activation.
+        try{
+          navigator.share({files:[file],title:'Steel Rock Invoice'}).then(
+            ()=>dialog.close(),
+            error=>{
+              if(error?.name!=='AbortError'){
+                console.error('iPhone image sharing failed',error);
+                dialog.querySelector('.image-help').textContent=
+                  'Sharing was unavailable. Touch and hold the image, then choose Save to Photos.';
+              }
+            }
+          );
+        }catch(error){
+          console.error('Could not open iPhone image sharing',error);
+          dialog.querySelector('.image-help').textContent=
+            'Open the full image or touch and hold it to save to Photos.';
+        }
+      };
+    }
+    dialog.querySelector('.close-photo').onclick=()=>dialog.close();
+    dialog.addEventListener('close',()=>{
+      dialog.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),120000);
+    },{once:true});
+    document.body.append(dialog);
+    dialog.showModal();
+  }
+  function isIphoneBrowser(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent)||
+      (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  }
   async function saveFile(blob,filename){
     const cap=window.Capacitor;
     if(window.InvoiceAndroid&&typeof window.InvoiceAndroid.saveInvoiceFile==='function'){
@@ -180,6 +275,10 @@
     if(cap?.getPlatform?.()==='ios'&&typeof cap.nativePromise==='function'){
       const file=await cap.nativePromise('Filesystem','writeFile',{path:filename,data:await toBase64(blob),directory:'CACHE'});
       await cap.nativePromise('Share','share',{title:filename,files:[file.uri],dialogTitle:'Save invoice'});
+      return;
+    }
+    if(blob.type==='image/png'&&isIphoneBrowser()){
+      showIphoneImageSave(blob,filename);
       return;
     }
     const url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -203,6 +302,7 @@
     }catch(e){console.error(e);alert(e?.message||'Unable to export this invoice. Please try again.')}
     finally{exporting=false;buttons.forEach(b=>b.disabled=false)}
   }
+  if(isIphoneBrowser())document.querySelector('#save-image').textContent='Save Image / Photos';
   document.querySelector('#save-pdf').onclick=()=>exportInvoice('pdf');
   document.querySelector('#save-image').onclick=()=>exportInvoice('png');
 })();
